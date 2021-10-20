@@ -56,7 +56,7 @@ class AuthenticateUserService {
             user: {
                 name: user.name,
                 avatar_url: user.avatar_url,
-                id: user_id,
+                id: user.id,
             }, 
         },
         process.env.JWT_SECRET,
