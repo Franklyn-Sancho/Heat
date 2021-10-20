@@ -13,14 +13,16 @@ interface IUserResponse {
     name: string
 }
 
+//Classe responsável pela autenticação do usuário 
+//
 class AuthenticateUserService {
     async execute(code: string) {
         const url = "https://github.com/login/oauth/access_token"
 
         const { data: accessTokenResponse } = await axios.post<IAccessTokenResponse>(url, null, {
             params: {
-                client_id: process.env.GITHUB_CLIENT_ID,
-                client_secret: process.env.GITHUB_CLIENT_SECRET,
+                client_id: process.env.GITHUB_CLIENT_ID, //Código Env
+                client_secret: process.env.GITHUB_CLIENT_SECRET, //Código Env
                 code,
             },
             headers: {
@@ -28,6 +30,7 @@ class AuthenticateUserService {
             }
         })
 
+        //Consome os dados da Api do próprio Gighub, retornando o token e autorizando. 
         const response = await axios.get<IUserResponse>("https://api.github.com/user", {
             headers: {
                 authorization: `Bearer ${accessTokenResponse.access_token}`
@@ -41,9 +44,12 @@ class AuthenticateUserService {
                 github_id: id
             }
         })
+        /**Se o usuário não existir, neste caso, nunca ter se autenticado na nossa aplicação,
+         * será criado no banco de dados . 
+         */
         if(!user) {
             user = await prismaClient.user.create({
-                data: {
+                data: { //Os dados guardados no banco de dados. 
                     github_id: id,
                     login,
                     avatar_url,
@@ -52,6 +58,7 @@ class AuthenticateUserService {
             })
         }
 
+        //Para logar na nossa aplicação será necessário esses dados 
         const token = sign({
             user: {
                 name: user.name,
@@ -59,10 +66,10 @@ class AuthenticateUserService {
                 id: user.id,
             }, 
         },
-        process.env.JWT_SECRET,
+        process.env.JWT_SECRET, //O id de autenticação único de cada usuário
         {
-            subject: user.id,
-            expiresIn: "1d",
+            subject: user.id, 
+            expiresIn: "1d", //O token expira em um dia
         }
         
         )
